@@ -33,3 +33,6 @@ Integração Supabase:
 - Alterações em VP/Presidente são salvas no Supabase via REST API.
 - A chave utilizada é a publishable key, própria para uso no frontend.
 - A importação CSV pelo painel foi desabilitada; atualizações em massa devem ser feitas pelo Supabase.
+
+
+v1.1.1: textos dos indicadores ajustados; card 'Não visitadas' clicável; alerta mobile para pendências dentro do bloco Estado de São Paulo.

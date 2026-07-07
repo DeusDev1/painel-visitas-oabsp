@@ -368,6 +368,36 @@ main{height:calc(100vh - 86px);padding:0 22px 22px;display:grid;grid-template-co
   }
 }
 
+
+.kpi-clickable{cursor:pointer;transition:transform .15s ease, box-shadow .15s ease}
+.kpi-clickable:hover{transform:translateY(-1px);box-shadow:0 10px 22px rgba(18,32,51,.10)}
+.kpi-not{border-color:#fecaca}
+.mobile-not-visited-alert{display:none}
+
+@media (max-width: 768px){
+  .mobile-not-visited-alert{
+    display:block;
+    margin:0 18px 12px;
+    padding:14px 16px;
+    border:1px solid #fdba74;
+    background:#fff7ed;
+    color:#9a3412;
+    border-radius:16px;
+    font-weight:900;
+    font-size:15px;
+    line-height:1.25;
+    cursor:pointer;
+  }
+  .mobile-not-visited-alert small{
+    display:block;
+    margin-top:4px;
+    color:#9a3412;
+    opacity:.85;
+    font-size:12px;
+    font-weight:800;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -384,10 +414,10 @@ main{height:calc(100vh - 86px);padding:0 22px 22px;display:grid;grid-template-co
 <main>
 <section class="panel map-panel">
   <div class="kpis">
-    <div class="kpi"><small>Total de subseções</small><strong id="kTotal">—</strong></div>
-    <div class="kpi"><small>Visitadas</small><strong id="kVisited">—</strong></div>
-    <div class="kpi"><small>Vice-Presidente</small><strong id="kVP">—</strong></div>
-    <div class="kpi"><small>Ambas</small><strong id="kBoth">—</strong></div>
+    <div class="kpi"><small>SUBSEÇÕES</small><strong id="kTotal">—</strong></div>
+    <div class="kpi"><small>VISITAS PRESIDENTE</small><strong id="kVisited">—</strong></div>
+    <div class="kpi"><small>VISITAS VP</small><strong id="kVP">—</strong></div>
+    <div class="kpi"><small>PRES. + VP</small><strong id="kBoth">—</strong></div>
     <div class="kpi"><small>Não visitadas</small><strong id="kNot">—</strong></div>
   </div>
   <div class="map-stage">
@@ -402,18 +432,19 @@ main{height:calc(100vh - 86px);padding:0 22px 22px;display:grid;grid-template-co
 
 <aside class="panel side">
   <div class="side-head"><h2 id="sideTitle">Estado de São Paulo</h2><p id="sideText">Selecione uma região na lista lateral.</p></div>
+  <div id="mobileNotVisitedAlert" class="mobile-not-visited-alert" onclick="goToNotVisited()"></div>
   <div class="details">
-    <div class="mini"><span>Região</span><b id="dRegion">21</b></div>
+    <div class="mini"><span>Regiões</span><b id="dRegion">21</b></div>
     <div class="mini"><span>Subseções</span><b id="dTotal">—</b></div>
-    <div class="mini"><span>Visitadas</span><b id="dVisited">—</b></div>
+    <div class="mini"><span>VISITAS PRESIDENTE</span><b id="dVisited">—</b></div>
     <div class="mini"><span>Vice-Pres.</span><b id="dVP">—</b></div>
-    <div class="mini"><span>Ambas</span><b id="dBoth">—</b></div>
+    <div class="mini"><span>PRES. + VP</span><b id="dBoth">—</b></div>
     <div class="mini"><span>Cobertura</span><b id="dPct">—</b></div>
   </div>
   <div class="filters">
     <button id="filterAll" class="filter-btn active" onclick="setFilter('todas')">Todas</button>
     <button id="filterNot" class="filter-btn danger" onclick="setFilter('nao')">Não visitadas</button>
-    <button id="filterVisited" class="filter-btn success" onclick="setFilter('visitadas')">Visitadas</button>
+    <button id="filterVisited" class="filter-btn success" onclick="setFilter('visitadas')">VISITAS PRESIDENTE</button>
     <button id="btnVoltarRegiao" class="filter-btn back" onclick="showGeneral()">← Voltar</button>
     <select id="sortMode" onchange="renderSide()">
       <option value="regiao">Separar por Região Administrativa</option>
@@ -507,6 +538,22 @@ function updateBackButton(){
   btn.classList.toggle("visible", !!currentRegion);
 }
 
+
+function goToNotVisited(){
+  setFilter("nao");
+  const list = document.getElementById("subList");
+  if(list){
+    list.scrollIntoView({behavior:"smooth", block:"start"});
+  }
+}
+
+function updateMobileNotVisitedAlert(){
+  const el = document.getElementById("mobileNotVisitedAlert");
+  if(!el) return;
+  const base = currentRegion ? regionStats(currentRegion) : overall();
+  el.innerHTML = `${base.not} subseções ainda não visitadas<small>Toque aqui para filtrar apenas as pendentes</small>`;
+}
+
 function renderSide() {
   renderKpis();
   updateBackButton();
@@ -522,6 +569,7 @@ function renderSide() {
   else arr.sort((a,b)=>a.numero_regiao-b.numero_regiao || a.subsecao.localeCompare(b.subsecao,"pt-BR"));
 
   const base = currentRegion ? regionStats(currentRegion) : overall();
+  updateMobileNotVisitedAlert();
   sideTitle.textContent = currentRegion || "Estado de São Paulo";
   sideText.textContent = currentRegion ? "Subseções da região selecionada." : "Selecione uma região na lista lateral.";
   dRegion.textContent = currentRegion ? currentRegion.split("ª")[0] : "21";
