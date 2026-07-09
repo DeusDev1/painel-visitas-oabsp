@@ -173,12 +173,12 @@ main{height:calc(100vh - 86px);padding:0 22px 22px;display:grid;grid-template-co
   .kpis .kpi-vp{
     grid-column:1 / -1;
   }
-  /* Ordem no celular */
-  .kpis .kpi-pres{order:1}
-  .kpis .kpi-vp{order:2}
+  /* Ordem no celular (alinhada ao desktop: resumo em cima, "Visitadas" embaixo) */
+  .kpis .kpi-total{order:1}
+  .kpis .kpi-cob{order:2}
   .kpis .kpi-not{order:3}
-  .kpis .kpi-total{order:4}
-  .kpis .kpi-cob{order:5}
+  .kpis .kpi-pres{order:4}
+  .kpis .kpi-vp{order:5}
 
   .kpi{
     padding:14px 16px;
@@ -504,11 +504,11 @@ body.geral .details{display:none}
 <main>
 <section class="panel map-panel">
   <div class="kpis">
+    <div class="kpi kpi-total"><small>SUBSEÇÕES</small><strong id="kTotal">—</strong></div>
+    <div class="kpi kpi-clickable kpi-not" onclick="goToNotVisited()" title="Ver apenas as não visitadas"><small>Não visitadas</small><strong id="kNot">—</strong></div>
+    <div class="kpi kpi-cob"><small>Cobertura</small><strong id="kPct">—</strong></div>
     <div class="kpi kpi-pres"><small>Visitadas como Presidente</small><strong id="kVisited">—</strong></div>
     <div class="kpi kpi-vp"><small>Visitadas como Vice-Presidente</small><strong id="kVP">—</strong></div>
-    <div class="kpi kpi-clickable kpi-not" onclick="goToNotVisited()" title="Ver apenas as não visitadas"><small>Não visitadas</small><strong id="kNot">—</strong></div>
-    <div class="kpi kpi-total"><small>SUBSEÇÕES</small><strong id="kTotal">—</strong></div>
-    <div class="kpi kpi-cob"><small>Cobertura</small><strong id="kPct">—</strong></div>
   </div>
   <div class="map-stage">
     
@@ -536,8 +536,8 @@ body.geral .details{display:none}
     <button id="filterVisited" class="filter-btn success" onclick="setFilter('visitadas')">Visitadas</button>
     <button id="btnVoltarRegiao" class="filter-btn back" onclick="showGeneral()">← Voltar</button>
     <select id="sortMode" onchange="renderSide()">
-      <option value="regiao">Separar por Região Administrativa</option>
       <option value="alfabetica">Ordem Alfabética</option>
+      <option value="regiao">Separar por Região Administrativa</option>
     </select>
   </div>
   <div class="search"><div class="search-wrap"><input id="search" placeholder="Buscar subseção..." oninput="onSearchInput()"><button id="searchClear" class="search-clear" onclick="clearSearch()" aria-label="Limpar busca" title="Limpar">&times;</button></div></div>
@@ -706,7 +706,7 @@ function renderSide() {
   dTotal.textContent = base.total; dVisited.textContent = base.presidente; dVP.textContent = base.vp; dNot.textContent = base.not; dPct.textContent = base.pct + "%";
 
   subList.innerHTML = "";
-  if(!currentRegion && !q && activeFilter === "todas") {
+  if(!currentRegion && !q && activeFilter === "todas" && sortMode === "regiao") {
     regions.forEach(reg => {
       const st = regionStats(reg.name);
       const div = document.createElement("div");
