@@ -21,7 +21,7 @@ h1{margin:0;font-size:26px;letter-spacing:-.035em} .subtitle{color:var(--muted);
 .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 button,.file-label{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:12px;padding:9px 12px;font-weight:850;font-size:12px;cursor:pointer}
 button.primary{background:var(--dark);color:#fff;border-color:var(--dark)} input[type=file]{display:none}
-main{height:calc(100vh - 86px);padding:0 22px 22px;display:grid;grid-template-columns:2fr 3fr;gap:18px}
+main{height:calc(100vh - 86px);padding:0 22px 22px;display:grid;grid-template-columns:var(--main-map,40%) 1fr;gap:18px}
 .panel{background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);overflow:hidden}
 .map-panel{padding:16px;display:flex;flex-direction:column;min-width:0}
 .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
@@ -61,10 +61,11 @@ main{height:calc(100vh - 86px);padding:0 22px 22px;display:grid;grid-template-co
 .pill{border-radius:999px;padding:5px 8px;font-weight:950;font-size:10px;color:#fff;white-space:nowrap} .pill.vis{background:var(--green)} .pill.not{background:var(--red)} .pill.both{background:var(--blue)}
 .note{padding:11px 18px;color:var(--muted);font-size:11px;border-top:1px solid var(--line);font-weight:650}
 .tv header{display:none} .tv main{height:100vh;padding:16px;grid-template-columns:var(--tv-map,58%) 1fr} .tv .panel{border-radius:20px}
-.tv-controls{display:none}
-.tv .tv-controls{display:flex;align-items:center;gap:10px;position:fixed;left:18px;bottom:16px;z-index:60;background:rgba(16,35,52,.92);color:#fff;padding:10px 14px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.tv-controls{display:flex;align-items:center;gap:10px;position:fixed;left:18px;bottom:16px;z-index:60;background:rgba(16,35,52,.92);color:#fff;padding:10px 14px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+body.needs-auth .tv-controls{display:none}
 .tv-controls .tv-lbl{font-size:12px;font-weight:850;letter-spacing:.04em}
 .tv-controls input[type=range]{width:170px}
+@media(max-width:768px){ .tv-controls{display:none} }
 @media(max-width:1100px){main{grid-template-columns:1fr;height:auto}.kpis{grid-template-columns:repeat(2,1fr)}}
 
 
@@ -548,7 +549,7 @@ body.geral .details{display:none}
 
 <div id="tvControls" class="tv-controls">
   <span class="tv-lbl">Mapa</span>
-  <input id="tvRatio" type="range" min="25" max="70" step="1" value="58" oninput="setTvRatio(this.value)" aria-label="Proporção mapa e lista no Modo TV">
+  <input id="tvRatio" type="range" min="25" max="70" step="1" value="40" oninput="setRatio(this.value)" aria-label="Proporção entre mapa e lista">
   <span class="tv-lbl">Lista</span>
 </div>
 
@@ -935,25 +936,40 @@ async function initAuth(){
 
 function toggleTv() {
   document.body.classList.toggle("tv");
+  syncRatioSlider();
   if(document.fullscreenElement) document.exitFullscreen();
   else document.documentElement.requestFullscreen?.();
 }
 
-// Proporção mapa × lista no Modo TV (ajustável e lembrada entre sessões)
-function setTvRatio(v){
-  document.documentElement.style.setProperty("--tv-map", v + "%");
-  try{ localStorage.setItem("oabTvMap", v); }catch(e){}
+// Proporção mapa × lista — ajustável na página normal E no Modo TV.
+// Cada modo lembra o seu próprio valor.
+function setRatio(v){
+  if(document.body.classList.contains("tv")){
+    document.documentElement.style.setProperty("--tv-map", v + "%");
+    try{ localStorage.setItem("oabTvMap", v); }catch(e){}
+  } else {
+    document.documentElement.style.setProperty("--main-map", v + "%");
+    try{ localStorage.setItem("oabMainMap", v); }catch(e){}
+  }
 }
-function initTvRatio(){
-  let v = "58";
-  try{ v = localStorage.getItem("oabTvMap") || "58"; }catch(e){}
+function syncRatioSlider(){
   const s = document.getElementById("tvRatio");
-  if(s) s.value = v;
-  document.documentElement.style.setProperty("--tv-map", v + "%");
+  if(!s) return;
+  const tv = document.body.classList.contains("tv");
+  let v;
+  try{ v = localStorage.getItem(tv ? "oabTvMap" : "oabMainMap"); }catch(e){}
+  s.value = v || (tv ? "58" : "40");
+}
+function initRatios(){
+  let tv = "58", mn = "40";
+  try{ tv = localStorage.getItem("oabTvMap") || "58"; mn = localStorage.getItem("oabMainMap") || "40"; }catch(e){}
+  document.documentElement.style.setProperty("--tv-map", tv + "%");
+  document.documentElement.style.setProperty("--main-map", mn + "%");
+  syncRatioSlider();
 }
 // Sair da tela cheia (ex.: tecla Esc) também sai do Modo TV
 document.addEventListener("fullscreenchange", () => {
-  if(!document.fullscreenElement) document.body.classList.remove("tv");
+  if(!document.fullscreenElement){ document.body.classList.remove("tv"); syncRatioSlider(); }
 });
 // Reorganiza a ordem dos blocos no celular:
 // indicadores → subseções → mapa → botões de ação.
@@ -989,7 +1005,7 @@ document.addEventListener("fullscreenchange", () => {
 
 renderKpis();
 renderOverlay();
-initTvRatio();
+initRatios();
 initAuth();
 </script>
 </body>
