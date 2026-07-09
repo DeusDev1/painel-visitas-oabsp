@@ -1,0 +1,15 @@
+# Publica o painel como site estático no GitLab Pages.
+# Copia apenas os arquivos do aplicativo para "public/". Os documentos internos
+# (RELATORIO-REVISAO.md, GUIA-LOGIN-SUPABASE.md, supabase-rls.sql, README) ficam
+# versionados no repositório, mas NÃO são publicados no site.
+pages:
+  stage: deploy
+  image: alpine:latest
+  script:
+    - mkdir -p public
+    - cp -r index.html config.js assets data public/
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

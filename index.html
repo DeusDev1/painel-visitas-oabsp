@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Painel Interativo de Visitas - OAB/SP</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="data/dados.js"></script>
 <style>
 :root {
@@ -20,10 +22,10 @@ h1{margin:0;font-size:26px;letter-spacing:-.035em} .subtitle{color:var(--muted);
 .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 button,.file-label{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:12px;padding:9px 12px;font-weight:850;font-size:12px;cursor:pointer}
 button.primary{background:var(--dark);color:#fff;border-color:var(--dark)} input[type=file]{display:none}
-main{height:calc(100vh - 86px);padding:0 22px 22px;display:grid;grid-template-columns:1.55fr .45fr;gap:18px}
+main{height:calc(100vh - 86px);padding:0 22px 22px;display:grid;grid-template-columns:2fr 3fr;gap:18px}
 .panel{background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);overflow:hidden}
 .map-panel{padding:16px;display:flex;flex-direction:column;min-width:0}
-.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
 .kpi{background:#fff;border:1px solid var(--line);border-radius:17px;padding:13px}
 .kpi small{display:block;color:var(--muted);font-weight:950;text-transform:uppercase;letter-spacing:.08em;font-size:10px}
 .kpi strong{display:block;font-size:32px;line-height:1;margin-top:7px;letter-spacing:-.06em}
@@ -38,7 +40,7 @@ main{height:calc(100vh - 86px);padding:0 22px 22px;display:grid;grid-template-co
 .tooltip{position:fixed;display:none;background:#102334;color:#fff;padding:9px 11px;border-radius:12px;font-weight:850;font-size:12px;z-index:50;box-shadow:var(--shadow);pointer-events:none}
 .side{display:flex;flex-direction:column;min-width:0}
 .side-head{padding:16px 18px 11px;border-bottom:1px solid var(--line)} .side-head h2{margin:0;font-size:21px} .side-head p{margin:5px 0 0;color:var(--muted);font-size:12px;font-weight:650}
-.details{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;padding:13px 18px;border-bottom:1px solid var(--line)}
+.details{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;padding:13px 18px;border-bottom:1px solid var(--line)}
 .mini{border:1px solid var(--line);border-radius:14px;background:#fff;padding:10px} .mini span{display:block;color:var(--muted);font-size:10px;font-weight:950;text-transform:uppercase;letter-spacing:.07em} .mini b{display:block;font-size:24px;line-height:1;margin-top:5px;letter-spacing:-.06em}
 .filters{padding:12px 18px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px}
 .filter-btn{font-size:11px;padding:8px} .filter-btn.active{background:var(--dark);color:#fff;border-color:var(--dark)} .filter-btn.danger.active{background:var(--red);border-color:var(--red)} .filter-btn.success.active{background:var(--green);border-color:var(--green)}
@@ -142,40 +144,42 @@ main{height:calc(100vh - 86px);padding:0 22px 22px;display:grid;grid-template-co
   }
 
   .side{
-    order:1;
     width:100%;
     border-radius:22px;
     overflow:hidden;
   }
 
   .map-panel{
-    order:2;
     width:100%;
     border-radius:22px;
     padding:12px;
   }
 
   .kpis{
-    grid-template-columns:1fr !important;
+    grid-template-columns:repeat(2,1fr) !important;
     gap:10px;
     margin-bottom:12px;
   }
 
+  .kpis .kpi-not{
+    grid-column:1 / -1;
+  }
+
   .kpi{
-    padding:16px 18px;
+    padding:14px 16px;
     border-radius:18px;
     min-height:auto;
   }
 
   .kpi small{
-    font-size:12px;
-    letter-spacing:.09em;
+    font-size:11px;
+    letter-spacing:.08em;
   }
 
   .kpi strong{
-    font-size:42px;
+    font-size:30px;
     line-height:1;
-    margin-top:10px;
+    margin-top:8px;
   }
 
   .side-head{
@@ -369,38 +373,108 @@ main{height:calc(100vh - 86px);padding:0 22px 22px;display:grid;grid-template-co
 }
 
 
+/* Tela de login */
+body.needs-auth header, body.needs-auth main{display:none}
+#loginOverlay{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#0f1e2e,#1b3a53)}
+body.needs-auth #loginOverlay{display:flex}
+.login-card{width:100%;max-width:380px;background:#fff;border-radius:24px;box-shadow:0 24px 60px rgba(0,0,0,.35);padding:28px 26px}
+.login-card img{width:120px;height:auto;display:block;margin:0 auto 14px}
+.login-card h2{margin:0 0 4px;text-align:center;font-size:20px;color:var(--ink)}
+.login-card p{margin:0 0 18px;text-align:center;color:var(--muted);font-size:13px;font-weight:600}
+.login-card label{display:block;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:12px 0 5px}
+.login-card input{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px 13px;font-size:14px;font-weight:600}
+.login-card button{width:100%;margin-top:18px;background:var(--dark);color:#fff;border:1px solid var(--dark);border-radius:12px;padding:13px;font-weight:900;font-size:14px;cursor:pointer}
+.login-card button:disabled{opacity:.6;cursor:default}
+.login-error{display:none;margin-top:14px;padding:10px 12px;border-radius:12px;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;font-size:12px;font-weight:800;text-align:center}
+.login-error.show{display:block}
+
 .kpi-clickable{cursor:pointer;transition:transform .15s ease, box-shadow .15s ease}
 .kpi-clickable:hover{transform:translateY(-1px);box-shadow:0 10px 22px rgba(18,32,51,.10)}
-.kpi-not{border-color:#fecaca}
+.kpi-not{border-color:#fca5a5;background:#fff7f7}
+.kpi-not strong{color:var(--red)}
 .mobile-not-visited-alert{display:none}
+
+/* Celular: evita números repetidos. Na visão geral do Estado, os indicadores do
+   topo já resumem tudo, então a grade de detalhes e a faixa laranja ficam ocultas
+   (o destaque de pendências vira o card "Não visitadas", clicável). Ao entrar numa
+   região, ambos reaparecem mostrando os números daquela região. */
+/* Na visão geral do Estado, os indicadores já resumem tudo — some a grade de
+   detalhes (desktop e celular). Ela reaparece ao entrar numa região. */
+body.geral .details{display:none}
+@media (max-width: 768px){
+  body.geral .mobile-not-visited-alert{display:none !important}
+}
 
 @media (max-width: 768px){
   .mobile-not-visited-alert{
-    display:block;
-    margin:0 18px 12px;
-    padding:14px 16px;
-    border:1px solid #fdba74;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin:0 18px 14px;
+    padding:16px 18px;
+    border:2px solid #f97316;
     background:#fff7ed;
     color:#9a3412;
-    border-radius:16px;
+    border-radius:18px;
     font-weight:900;
-    font-size:15px;
-    line-height:1.25;
+    font-size:16px;
+    line-height:1.2;
     cursor:pointer;
+    box-shadow:0 10px 24px rgba(249,115,22,.18);
+  }
+  .mobile-not-visited-alert .mnv-count{
+    flex:0 0 auto;
+    min-width:54px;
+    text-align:center;
+    font-size:30px;
+    line-height:1;
+    color:#c2410c;
+    background:#fff;
+    border:1px solid #fdba74;
+    border-radius:14px;
+    padding:9px 6px;
   }
   .mobile-not-visited-alert small{
     display:block;
-    margin-top:4px;
+    margin-top:5px;
     color:#9a3412;
     opacity:.85;
     font-size:12px;
     font-weight:800;
   }
+  .mobile-not-visited-alert.done{
+    border-color:#86efac;
+    background:#f0fdf4;
+    color:#166534;
+    box-shadow:0 10px 24px rgba(22,163,74,.15);
+  }
+  .mobile-not-visited-alert.done .mnv-count{
+    color:#16a34a;
+    border-color:#86efac;
+  }
+  .mobile-not-visited-alert.done small{
+    color:#166534;
+  }
 }
 
 </style>
 </head>
-<body>
+<body class="needs-auth">
+
+<div id="loginOverlay">
+  <form class="login-card" onsubmit="doLogin(event)">
+    <img src="assets/OAB-SP-logo-preto.png" alt="OAB São Paulo">
+    <h2>Painel de Visitas</h2>
+    <p>Acesso restrito — entre com seu e-mail e senha</p>
+    <label for="loginEmail">E-mail</label>
+    <input id="loginEmail" type="email" autocomplete="username" required>
+    <label for="loginPassword">Senha</label>
+    <input id="loginPassword" type="password" autocomplete="current-password" required>
+    <button id="loginBtn" type="submit">Entrar</button>
+    <div id="loginError" class="login-error"></div>
+  </form>
+</div>
+
 <header>
   <div class="brand"><img class="logo-img" src="assets/OAB-SP-logo-preto.png" alt="OAB São Paulo"><div><h1>Painel de Visitas às Subseções</h1><div class="subtitle">Dr. Leonardo Sica | Mapa da Divisão Administrativa da OAB/SP</div></div></div>
   <div class="actions">
@@ -408,6 +482,7 @@ main{height:calc(100vh - 86px);padding:0 22px 22px;display:grid;grid-template-co
     <button onclick="exportCSV()">Exportar CSV</button>
     <label class="file-label">Importar CSV<input type="file" accept=".csv" onchange="importCSV(event)"></label>
     <button class="primary" onclick="toggleTv()">Modo TV</button>
+    <button onclick="doLogout()" title="Encerrar sessão">Sair</button>
   </div>
 </header>
 
@@ -415,10 +490,11 @@ main{height:calc(100vh - 86px);padding:0 22px 22px;display:grid;grid-template-co
 <section class="panel map-panel">
   <div class="kpis">
     <div class="kpi"><small>SUBSEÇÕES</small><strong id="kTotal">—</strong></div>
-    <div class="kpi"><small>VISITAS PRESIDENTE</small><strong id="kVisited">—</strong></div>
+    <div class="kpi"><small>Visitadas</small><strong id="kVisited">—</strong></div>
     <div class="kpi"><small>VISITAS VP</small><strong id="kVP">—</strong></div>
     <div class="kpi"><small>PRES. + VP</small><strong id="kBoth">—</strong></div>
-    <div class="kpi"><small>Não visitadas</small><strong id="kNot">—</strong></div>
+    <div class="kpi kpi-clickable kpi-not" onclick="goToNotVisited()" title="Ver apenas as não visitadas"><small>Não visitadas</small><strong id="kNot">—</strong></div>
+    <div class="kpi"><small>Cobertura</small><strong id="kPct">—</strong></div>
   </div>
   <div class="map-stage">
     
@@ -434,17 +510,17 @@ main{height:calc(100vh - 86px);padding:0 22px 22px;display:grid;grid-template-co
   <div class="side-head"><h2 id="sideTitle">Estado de São Paulo</h2><p id="sideText">Selecione uma região na lista lateral.</p></div>
   <div id="mobileNotVisitedAlert" class="mobile-not-visited-alert" onclick="goToNotVisited()"></div>
   <div class="details">
-    <div class="mini"><span>Regiões</span><b id="dRegion">21</b></div>
     <div class="mini"><span>Subseções</span><b id="dTotal">—</b></div>
-    <div class="mini"><span>VISITAS PRESIDENTE</span><b id="dVisited">—</b></div>
+    <div class="mini"><span>Visitadas</span><b id="dVisited">—</b></div>
     <div class="mini"><span>Vice-Pres.</span><b id="dVP">—</b></div>
     <div class="mini"><span>PRES. + VP</span><b id="dBoth">—</b></div>
+    <div class="mini"><span>Não visitadas</span><b id="dNot">—</b></div>
     <div class="mini"><span>Cobertura</span><b id="dPct">—</b></div>
   </div>
   <div class="filters">
     <button id="filterAll" class="filter-btn active" onclick="setFilter('todas')">Todas</button>
     <button id="filterNot" class="filter-btn danger" onclick="setFilter('nao')">Não visitadas</button>
-    <button id="filterVisited" class="filter-btn success" onclick="setFilter('visitadas')">VISITAS PRESIDENTE</button>
+    <button id="filterVisited" class="filter-btn success" onclick="setFilter('visitadas')">Visitadas</button>
     <button id="btnVoltarRegiao" class="filter-btn back" onclick="showGeneral()">← Voltar</button>
     <select id="sortMode" onchange="renderSide()">
       <option value="regiao">Separar por Região Administrativa</option>
@@ -461,12 +537,25 @@ main{height:calc(100vh - 86px);padding:0 22px 22px;display:grid;grid-template-co
 <script>
 const REGION_POLYGONS = {"1": "655,435 700,425 730,450 735,500 705,530 660,515 640,475", "2": "595,560 700,575 805,565 855,535 875,565 820,610 705,625 600,605", "3": "475,375 535,365 575,400 555,455 495,465 455,430", "4": "375,360 450,350 505,390 480,440 405,445 350,405", "5": "450,295 515,285 555,320 535,365 470,365 430,330", "6": "485,220 590,205 660,255 625,320 525,330 460,285", "7": "575,330 665,325 720,375 690,445 610,440 550,390", "8": "545,455 625,450 675,505 650,570 570,560 520,510", "9": "650,245 780,245 870,315 835,405 710,390 620,325", "10": "700,455 770,445 830,485 810,545 735,550 680,505", "11": "795,390 955,370 1020,440 985,545 835,530 800,465", "12": "300,300 425,290 500,350 470,405 350,405 265,355", "13": "350,150 500,135 590,200 530,270 385,270 305,215", "14": "365,460 500,455 575,525 535,615 390,610 315,540", "15": "220,390 350,370 420,435 380,520 250,530 175,470", "16": "190,190 340,175 420,235 365,320 225,325 145,265", "17": "115,335 240,315 320,370 280,465 135,480 65,415", "18": "135,260 265,245 345,305 305,385 165,395 85,335", "19": "630,520 690,515 725,550 705,610 640,610 600,565", "20": "520,515 630,505 680,565 645,640 535,640 480,580", "21": "250,520 370,510 430,580 385,665 250,660 185,590"};
 let regions = window.OAB_DATA.regions;
-const SUPABASE_URL = "https://vreylwrxmczdwueoznti.supabase.co/rest/v1";
-const SUPABASE_KEY = "sb_publishable_C01sEooTDzpcd1gQkmZPsA_LvmGCfMv";
+// Configuração do Supabase carregada de config.js (window.APP_CONFIG).
+// IMPORTANTE: a chave é a "publishable"/anon, projetada para uso no frontend e visível
+// no navegador. A proteção dos dados vem do LOGIN (Supabase Auth) + Row Level Security
+// (ver supabase-rls.sql). Sem login, o painel não lê nem grava nada.
+const SUPABASE_URL = (window.APP_CONFIG && window.APP_CONFIG.SUPABASE_URL) || "https://vreylwrxmczdwueoznti.supabase.co";
+const SUPABASE_KEY = (window.APP_CONFIG && (window.APP_CONFIG.SUPABASE_ANON_KEY || window.APP_CONFIG.SUPABASE_KEY)) || "sb_publishable_C01sEooTDzpcd1gQkmZPsA_LvmGCfMv";
+
+// Cliente Supabase (inclui automaticamente o token do usuário logado nas chamadas)
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let records = window.OAB_DATA.records || [];
 let usingSupabase = true;
 let currentRegion = null;
 let activeFilter = "todas";
+
+// Escapa uma string para uso seguro dentro de um literal JS entre aspas simples
+// (ex.: nomes como "Estrela d'Oeste"). Sem isto, o apóstrofo quebra o onclick.
+function jsStr(s){
+  return String(s).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+}
 
 function regionStats(regionName) {
   const arr = records.filter(r => r.regiao === regionName);
@@ -535,7 +624,7 @@ function showGeneral() {
 function updateBackButton(){
   const btn = document.getElementById("btnVoltarRegiao");
   if(!btn) return;
-  btn.classList.toggle("visible", !!currentRegion);
+  btn.style.display = "block"; // sempre visível
 }
 
 
@@ -551,12 +640,21 @@ function updateMobileNotVisitedAlert(){
   const el = document.getElementById("mobileNotVisitedAlert");
   if(!el) return;
   const base = currentRegion ? regionStats(currentRegion) : overall();
-  el.innerHTML = `${base.not} subseções ainda não visitadas<small>Toque aqui para filtrar apenas as pendentes</small>`;
+  const escopo = currentRegion ? "nesta região" : "no estado";
+  if(base.not > 0){
+    el.classList.remove("done");
+    const txt = base.not === 1 ? "subseção ainda não visitada" : "subseções ainda não visitadas";
+    el.innerHTML = `<span class="mnv-count">${base.not}</span><span class="mnv-text">${txt}<small>Toque para ver apenas as pendentes ${escopo}</small></span>`;
+  } else {
+    el.classList.add("done");
+    el.innerHTML = `<span class="mnv-count">✓</span><span class="mnv-text">Todas as subseções foram visitadas<small>Nenhuma pendência ${escopo}</small></span>`;
+  }
 }
 
 function renderSide() {
   renderKpis();
   updateBackButton();
+  document.body.classList.toggle("geral", !currentRegion);
   const q = search.value.trim().toLowerCase();
   const sortMode = document.getElementById("sortMode").value;
 
@@ -572,8 +670,7 @@ function renderSide() {
   updateMobileNotVisitedAlert();
   sideTitle.textContent = currentRegion || "Estado de São Paulo";
   sideText.textContent = currentRegion ? "Subseções da região selecionada." : "Selecione uma região na lista lateral.";
-  dRegion.textContent = currentRegion ? currentRegion.split("ª")[0] : "21";
-  dTotal.textContent = base.total; dVisited.textContent = base.visited; dVP.textContent = base.vp; dBoth.textContent = base.both; dPct.textContent = base.pct + "%";
+  dTotal.textContent = base.total; dVisited.textContent = base.visited; dVP.textContent = base.vp; dBoth.textContent = base.both; dNot.textContent = base.not; dPct.textContent = base.pct + "%";
 
   subList.innerHTML = "";
   if(!currentRegion && !q && activeFilter === "todas") {
@@ -610,10 +707,10 @@ function renderSide() {
         ${statusPill(r)}
       </div>
       <div class="sub-options" onclick="event.stopPropagation()">
-        <button class="option-btn pres ${r.presidente === "Sim" ? "active" : ""}" onclick="setVisitOption('${r.subsecao.replace(/'/g, "\'")}', 'presidente', ${r.presidente !== "Sim"})">
+        <button class="option-btn pres ${r.presidente === "Sim" ? "active" : ""}" onclick="setVisitOption('${jsStr(r.subsecao)}', 'presidente', ${r.presidente !== "Sim"})">
           Visitou como Presidente
         </button>
-        <button class="option-btn vp ${r.vp === "Sim" ? "active" : ""}" onclick="setVisitOption('${r.subsecao.replace(/'/g, "\'")}', 'vp', ${r.vp !== "Sim"})">
+        <button class="option-btn vp ${r.vp === "Sim" ? "active" : ""}" onclick="setVisitOption('${jsStr(r.subsecao)}', 'vp', ${r.vp !== "Sim"})">
           Visitou como VP
         </button>
       </div>`;
@@ -695,18 +792,14 @@ function normalizeRecordForDb(r){
 
 async function loadFromSupabase(){
   try{
-    const res = await fetch(`${SUPABASE_URL}/subsecoes?select=*&order=numero_regiao.asc,subsecao.asc`, {
-      headers: {
-        "apikey": SUPABASE_KEY,
-        "Authorization": `Bearer ${SUPABASE_KEY}`
-      }
-    });
+    const { data: rows, error } = await sb
+      .from("subsecoes")
+      .select("*")
+      .order("numero_regiao", { ascending: true })
+      .order("subsecao", { ascending: true });
 
-    if(!res.ok){
-      throw new Error(await res.text());
-    }
+    if(error) throw error;
 
-    const rows = await res.json();
     if(rows && rows.length){
       records = rows.map(normalizeRecordFromDb);
     }
@@ -715,7 +808,7 @@ async function loadFromSupabase(){
     renderSide();
   }catch(error){
     console.error("Erro ao carregar dados do Supabase:", error);
-    alert("Não foi possível carregar os dados do Supabase. O painel será aberto com os dados locais.");
+    alert("Não foi possível carregar os dados do Supabase. O painel será aberto com os dados locais (somente leitura).");
     renderKpis();
     renderSide();
   }
@@ -724,24 +817,66 @@ async function loadFromSupabase(){
 async function saveRecordToSupabase(r){
   if(!r.id){
     console.warn("Registro sem ID, não foi possível salvar no Supabase:", r);
+    alert("Esta alteração NÃO foi salva: o painel está usando dados locais (sem conexão com o banco). Recarregue a página e tente novamente quando o Supabase estiver disponível.");
     return;
   }
 
-  const res = await fetch(`${SUPABASE_URL}/subsecoes?id=eq.${r.id}`, {
-    method: "PATCH",
-    headers: {
-      "apikey": SUPABASE_KEY,
-      "Authorization": `Bearer ${SUPABASE_KEY}`,
-      "Content-Type": "application/json",
-      "Prefer": "return=minimal"
-    },
-    body: JSON.stringify(normalizeRecordForDb(r))
-  });
+  const { error } = await sb
+    .from("subsecoes")
+    .update(normalizeRecordForDb(r))
+    .eq("id", r.id);
 
-  if(!res.ok){
-    const msg = await res.text();
-    console.error("Erro ao salvar no Supabase:", msg);
-    alert("Não foi possível salvar a alteração no Supabase. Tente novamente.");
+  if(error){
+    console.error("Erro ao salvar no Supabase:", error);
+    alert("Não foi possível salvar a alteração. Verifique sua conexão e se você continua logado, e tente novamente.");
+  }
+}
+
+// ----------------------- Autenticação (Supabase Auth) -----------------------
+function showLoginError(msg){
+  const el = document.getElementById("loginError");
+  el.textContent = msg;
+  el.classList.add("show");
+}
+
+async function doLogin(ev){
+  ev.preventDefault();
+  const btn = document.getElementById("loginBtn");
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+  document.getElementById("loginError").classList.remove("show");
+  btn.disabled = true;
+  btn.textContent = "Entrando...";
+
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+
+  btn.disabled = false;
+  btn.textContent = "Entrar";
+  if(error){
+    showLoginError("E-mail ou senha incorretos.");
+    return;
+  }
+  document.getElementById("loginPassword").value = "";
+  await enterApp();
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  document.body.classList.add("needs-auth");
+  records = window.OAB_DATA.records || [];
+}
+
+async function enterApp(){
+  document.body.classList.remove("needs-auth");
+  await loadFromSupabase();
+}
+
+async function initAuth(){
+  const { data } = await sb.auth.getSession();
+  if(data && data.session){
+    await enterApp();
+  }else{
+    document.body.classList.add("needs-auth");
   }
 }
 
@@ -750,9 +885,41 @@ function toggleTv() {
   if(document.fullscreenElement) document.exitFullscreen();
   else document.documentElement.requestFullscreen?.();
 }
+// Reorganiza a ordem dos blocos no celular:
+// indicadores → subseções → mapa → botões de ação.
+// No desktop mantém o layout original (indicadores sobre o mapa; botões no cabeçalho).
+(function setupResponsiveLayout(){
+  const mq = window.matchMedia("(max-width: 768px)");
+  const kpis = document.querySelector(".kpis");
+  const actions = document.querySelector(".actions");
+  const mainEl = document.querySelector("main");
+  const mapPanel = document.querySelector(".map-panel");
+  const sideEl = document.querySelector(".side");
+  const headerEl = document.querySelector("header");
+  if(!kpis || !actions || !mainEl || !mapPanel || !sideEl || !headerEl) return;
+
+  function applyLayout(){
+    if(mq.matches){
+      // Celular: ordem = indicadores, subseções, mapa, botões
+      mainEl.insertBefore(kpis, mainEl.firstChild);
+      mainEl.appendChild(sideEl);
+      mainEl.appendChild(mapPanel);
+      mainEl.appendChild(actions);
+    } else {
+      // Desktop: restaura estrutura original
+      mapPanel.insertBefore(kpis, mapPanel.firstChild);
+      headerEl.appendChild(actions);
+      mainEl.appendChild(mapPanel);
+      mainEl.appendChild(sideEl);
+    }
+  }
+  applyLayout();
+  mq.addEventListener("change", applyLayout);
+})();
+
 renderKpis();
 renderOverlay();
-loadFromSupabase();
+initAuth();
 </script>
 </body>
 </html>
