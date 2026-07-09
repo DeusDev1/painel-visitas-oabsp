@@ -169,16 +169,16 @@ main{height:calc(100vh - 86px);padding:0 22px 22px;display:grid;grid-template-co
   }
 
   .kpis .kpi-not,
-  .kpis .kpi-pres{
+  .kpis .kpi-pres,
+  .kpis .kpi-vp{
     grid-column:1 / -1;
   }
-  /* Ordem no celular: mantém os dois cards grandes sem deixar buracos */
+  /* Ordem no celular */
   .kpis .kpi-pres{order:1}
   .kpis .kpi-vp{order:2}
-  .kpis .kpi-both{order:3}
-  .kpis .kpi-not{order:4}
-  .kpis .kpi-total{order:5}
-  .kpis .kpi-cob{order:6}
+  .kpis .kpi-not{order:3}
+  .kpis .kpi-total{order:4}
+  .kpis .kpi-cob{order:5}
 
   .kpi{
     padding:14px 16px;
@@ -505,9 +505,8 @@ body.geral .details{display:none}
 <section class="panel map-panel">
   <div class="kpis">
     <div class="kpi kpi-pres"><small>Visitadas como Presidente</small><strong id="kVisited">—</strong></div>
-    <div class="kpi kpi-vp"><small>Visitadas como VP</small><strong id="kVP">—</strong></div>
+    <div class="kpi kpi-vp"><small>Visitadas como Vice-Presidente</small><strong id="kVP">—</strong></div>
     <div class="kpi kpi-clickable kpi-not" onclick="goToNotVisited()" title="Ver apenas as não visitadas"><small>Não visitadas</small><strong id="kNot">—</strong></div>
-    <div class="kpi kpi-both"><small>Visitas Pres. + VP</small><strong id="kBoth">—</strong></div>
     <div class="kpi kpi-total"><small>SUBSEÇÕES</small><strong id="kTotal">—</strong></div>
     <div class="kpi kpi-cob"><small>Cobertura</small><strong id="kPct">—</strong></div>
   </div>
@@ -527,8 +526,7 @@ body.geral .details{display:none}
   <div class="details">
     <div class="mini"><span>Subseções</span><b id="dTotal">—</b></div>
     <div class="mini"><span>Visitadas como Presidente</span><b id="dVisited">—</b></div>
-    <div class="mini"><span>Visitadas como VP</span><b id="dVP">—</b></div>
-    <div class="mini"><span>Visitas Pres. + VP</span><b id="dBoth">—</b></div>
+    <div class="mini"><span>Visitadas como Vice-Presidente</span><b id="dVP">—</b></div>
     <div class="mini"><span>Não visitadas</span><b id="dNot">—</b></div>
     <div class="mini"><span>Cobertura</span><b id="dPct">—</b></div>
   </div>
@@ -603,7 +601,6 @@ function renderKpis() {
   if(typeof kTotal !== "undefined") kTotal.textContent = o.total;
   if(typeof kVisited !== "undefined") kVisited.textContent = o.presidente;
   if(typeof kVP !== "undefined") kVP.textContent = o.vp;
-  if(typeof kBoth !== "undefined") kBoth.textContent = o.both;
   if(typeof kNot !== "undefined") kNot.textContent = o.not;
   if(typeof kPct !== "undefined") kPct.textContent = o.pct + "%";
 }
@@ -706,7 +703,7 @@ function renderSide() {
   updateMobileNotVisitedAlert();
   sideTitle.textContent = currentRegion || "Estado de São Paulo";
   sideText.textContent = currentRegion ? "Subseções da região selecionada." : "Selecione uma região na lista lateral.";
-  dTotal.textContent = base.total; dVisited.textContent = base.presidente; dVP.textContent = base.vp; dBoth.textContent = base.both; dNot.textContent = base.not; dPct.textContent = base.pct + "%";
+  dTotal.textContent = base.total; dVisited.textContent = base.presidente; dVP.textContent = base.vp; dNot.textContent = base.not; dPct.textContent = base.pct + "%";
 
   subList.innerHTML = "";
   if(!currentRegion && !q && activeFilter === "todas") {
