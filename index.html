@@ -6,7 +6,6 @@
 <title>Painel Interativo de Visitas - OAB/SP</title>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="data/dados.js"></script>
 <style>
 :root {
   --bg:#edf2f7; --ink:#122033; --muted:#667085; --line:#d7dee8; --card:#fff;
@@ -46,6 +45,10 @@ main{height:calc(100vh - 86px);padding:0 22px 22px;display:grid;grid-template-co
 .filter-btn{font-size:11px;padding:8px} .filter-btn.active{background:var(--dark);color:#fff;border-color:var(--dark)} .filter-btn.danger.active{background:var(--red);border-color:var(--red)} .filter-btn.success.active{background:var(--green);border-color:var(--green)}
 .filters select{grid-column:1/-1;border:1px solid var(--line);border-radius:12px;padding:9px 11px;font-weight:850;color:var(--ink);background:#fff}
 .search{padding:12px 18px;border-bottom:1px solid var(--line)} .search input{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-weight:750}
+.search-wrap{position:relative} .search-wrap input{padding-right:38px}
+.search-clear{display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);border:none;background:transparent;color:var(--muted);font-size:22px;font-weight:900;line-height:1;cursor:pointer;padding:2px 8px;border-radius:8px}
+.search-clear:hover{color:var(--ink);background:#eef1f6}
+.search-clear.show{display:block}
 .highlight-box{padding:12px 18px;border-bottom:1px solid var(--line);background:#fff7f7;display:none}
 .highlight-title{font-weight:950;color:#991b1b;font-size:13px;margin-bottom:8px} .highlight-grid{display:flex;flex-wrap:wrap;gap:6px} .highlight-chip{background:#fff;border:1px solid #fecaca;color:#991b1b;border-radius:999px;padding:5px 8px;font-weight:850;font-size:11px}
 .sub-list{padding:12px 18px;overflow:auto;min-height:0}
@@ -57,7 +60,11 @@ main{height:calc(100vh - 86px);padding:0 22px 22px;display:grid;grid-template-co
 .sub-name{font-weight:900} .sub-meta{font-size:11px;color:var(--muted);margin-top:3px}
 .pill{border-radius:999px;padding:5px 8px;font-weight:950;font-size:10px;color:#fff;white-space:nowrap} .pill.vis{background:var(--green)} .pill.not{background:var(--red)} .pill.both{background:var(--blue)}
 .note{padding:11px 18px;color:var(--muted);font-size:11px;border-top:1px solid var(--line);font-weight:650}
-.tv header{display:none} .tv main{height:100vh;padding:16px;grid-template-columns:1.58fr .42fr} .tv .panel{border-radius:20px}
+.tv header{display:none} .tv main{height:100vh;padding:16px;grid-template-columns:var(--tv-map,58%) 1fr} .tv .panel{border-radius:20px}
+.tv-controls{display:none}
+.tv .tv-controls{display:flex;align-items:center;gap:10px;position:fixed;left:18px;bottom:16px;z-index:60;background:rgba(16,35,52,.92);color:#fff;padding:10px 14px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.tv-controls .tv-lbl{font-size:12px;font-weight:850;letter-spacing:.04em}
+.tv-controls input[type=range]{width:170px}
 @media(max-width:1100px){main{grid-template-columns:1fr;height:auto}.kpis{grid-template-columns:repeat(2,1fr)}}
 
 
@@ -161,9 +168,17 @@ main{height:calc(100vh - 86px);padding:0 22px 22px;display:grid;grid-template-co
     margin-bottom:12px;
   }
 
-  .kpis .kpi-not{
+  .kpis .kpi-not,
+  .kpis .kpi-pres{
     grid-column:1 / -1;
   }
+  /* Ordem no celular: mantém os dois cards grandes sem deixar buracos */
+  .kpis .kpi-pres{order:1}
+  .kpis .kpi-vp{order:2}
+  .kpis .kpi-both{order:3}
+  .kpis .kpi-not{order:4}
+  .kpis .kpi-total{order:5}
+  .kpis .kpi-cob{order:6}
 
   .kpi{
     padding:14px 16px;
@@ -489,12 +504,12 @@ body.geral .details{display:none}
 <main>
 <section class="panel map-panel">
   <div class="kpis">
-    <div class="kpi"><small>SUBSEÇÕES</small><strong id="kTotal">—</strong></div>
-    <div class="kpi"><small>Visitadas</small><strong id="kVisited">—</strong></div>
-    <div class="kpi"><small>VISITAS VP</small><strong id="kVP">—</strong></div>
-    <div class="kpi"><small>PRES. + VP</small><strong id="kBoth">—</strong></div>
+    <div class="kpi kpi-pres"><small>Visitadas como Presidente</small><strong id="kVisited">—</strong></div>
+    <div class="kpi kpi-vp"><small>Visitadas como VP</small><strong id="kVP">—</strong></div>
     <div class="kpi kpi-clickable kpi-not" onclick="goToNotVisited()" title="Ver apenas as não visitadas"><small>Não visitadas</small><strong id="kNot">—</strong></div>
-    <div class="kpi"><small>Cobertura</small><strong id="kPct">—</strong></div>
+    <div class="kpi kpi-both"><small>Visitas Pres. + VP</small><strong id="kBoth">—</strong></div>
+    <div class="kpi kpi-total"><small>SUBSEÇÕES</small><strong id="kTotal">—</strong></div>
+    <div class="kpi kpi-cob"><small>Cobertura</small><strong id="kPct">—</strong></div>
   </div>
   <div class="map-stage">
     
@@ -511,9 +526,9 @@ body.geral .details{display:none}
   <div id="mobileNotVisitedAlert" class="mobile-not-visited-alert" onclick="goToNotVisited()"></div>
   <div class="details">
     <div class="mini"><span>Subseções</span><b id="dTotal">—</b></div>
-    <div class="mini"><span>Visitadas</span><b id="dVisited">—</b></div>
-    <div class="mini"><span>Vice-Pres.</span><b id="dVP">—</b></div>
-    <div class="mini"><span>PRES. + VP</span><b id="dBoth">—</b></div>
+    <div class="mini"><span>Visitadas como Presidente</span><b id="dVisited">—</b></div>
+    <div class="mini"><span>Visitadas como VP</span><b id="dVP">—</b></div>
+    <div class="mini"><span>Visitas Pres. + VP</span><b id="dBoth">—</b></div>
     <div class="mini"><span>Não visitadas</span><b id="dNot">—</b></div>
     <div class="mini"><span>Cobertura</span><b id="dPct">—</b></div>
   </div>
@@ -527,16 +542,24 @@ body.geral .details{display:none}
       <option value="alfabetica">Ordem Alfabética</option>
     </select>
   </div>
-  <div class="search"><input id="search" placeholder="Buscar subseção..." oninput="renderSide()"></div>
+  <div class="search"><div class="search-wrap"><input id="search" placeholder="Buscar subseção..." oninput="onSearchInput()"><button id="searchClear" class="search-clear" onclick="clearSearch()" aria-label="Limpar busca" title="Limpar">&times;</button></div></div>
   <div class="sub-list" id="subList"></div>
   
 </aside>
 </main>
 
+<div id="tvControls" class="tv-controls">
+  <span class="tv-lbl">Mapa</span>
+  <input id="tvRatio" type="range" min="25" max="70" step="1" value="58" oninput="setTvRatio(this.value)" aria-label="Proporção mapa e lista no Modo TV">
+  <span class="tv-lbl">Lista</span>
+</div>
+
 
 <script>
 const REGION_POLYGONS = {"1": "655,435 700,425 730,450 735,500 705,530 660,515 640,475", "2": "595,560 700,575 805,565 855,535 875,565 820,610 705,625 600,605", "3": "475,375 535,365 575,400 555,455 495,465 455,430", "4": "375,360 450,350 505,390 480,440 405,445 350,405", "5": "450,295 515,285 555,320 535,365 470,365 430,330", "6": "485,220 590,205 660,255 625,320 525,330 460,285", "7": "575,330 665,325 720,375 690,445 610,440 550,390", "8": "545,455 625,450 675,505 650,570 570,560 520,510", "9": "650,245 780,245 870,315 835,405 710,390 620,325", "10": "700,455 770,445 830,485 810,545 735,550 680,505", "11": "795,390 955,370 1020,440 985,545 835,530 800,465", "12": "300,300 425,290 500,350 470,405 350,405 265,355", "13": "350,150 500,135 590,200 530,270 385,270 305,215", "14": "365,460 500,455 575,525 535,615 390,610 315,540", "15": "220,390 350,370 420,435 380,520 250,530 175,470", "16": "190,190 340,175 420,235 365,320 225,325 145,265", "17": "115,335 240,315 320,370 280,465 135,480 65,415", "18": "135,260 265,245 345,305 305,385 165,395 85,335", "19": "630,520 690,515 725,550 705,610 640,610 600,565", "20": "520,515 630,505 680,565 645,640 535,640 480,580", "21": "250,520 370,510 430,580 385,665 250,660 185,590"};
-let regions = window.OAB_DATA.regions;
+// Dados começam vazios: só são carregados do Supabase APÓS o login.
+// Nenhum dado real fica em arquivo estático (evita exposição pública).
+let regions = [];
 // Configuração do Supabase carregada de config.js (window.APP_CONFIG).
 // IMPORTANTE: a chave é a "publishable"/anon, projetada para uso no frontend e visível
 // no navegador. A proteção dos dados vem do LOGIN (Supabase Auth) + Row Level Security
@@ -546,7 +569,7 @@ const SUPABASE_KEY = (window.APP_CONFIG && (window.APP_CONFIG.SUPABASE_ANON_KEY 
 
 // Cliente Supabase (inclui automaticamente o token do usuário logado nas chamadas)
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-let records = window.OAB_DATA.records || [];
+let records = [];
 let usingSupabase = true;
 let currentRegion = null;
 let activeFilter = "todas";
@@ -578,7 +601,7 @@ function overall() {
 function renderKpis() {
   const o = overall();
   if(typeof kTotal !== "undefined") kTotal.textContent = o.total;
-  if(typeof kVisited !== "undefined") kVisited.textContent = o.visited;
+  if(typeof kVisited !== "undefined") kVisited.textContent = o.presidente;
   if(typeof kVP !== "undefined") kVP.textContent = o.vp;
   if(typeof kBoth !== "undefined") kBoth.textContent = o.both;
   if(typeof kNot !== "undefined") kNot.textContent = o.not;
@@ -651,6 +674,19 @@ function updateMobileNotVisitedAlert(){
   }
 }
 
+function onSearchInput(){
+  const c = document.getElementById("searchClear");
+  if(c) c.classList.toggle("show", !!search.value);
+  renderSide();
+}
+function clearSearch(){
+  search.value = "";
+  const c = document.getElementById("searchClear");
+  if(c) c.classList.remove("show");
+  renderSide();
+  search.focus();
+}
+
 function renderSide() {
   renderKpis();
   updateBackButton();
@@ -670,7 +706,7 @@ function renderSide() {
   updateMobileNotVisitedAlert();
   sideTitle.textContent = currentRegion || "Estado de São Paulo";
   sideText.textContent = currentRegion ? "Subseções da região selecionada." : "Selecione uma região na lista lateral.";
-  dTotal.textContent = base.total; dVisited.textContent = base.visited; dVP.textContent = base.vp; dBoth.textContent = base.both; dNot.textContent = base.not; dPct.textContent = base.pct + "%";
+  dTotal.textContent = base.total; dVisited.textContent = base.presidente; dVP.textContent = base.vp; dBoth.textContent = base.both; dNot.textContent = base.not; dPct.textContent = base.pct + "%";
 
   subList.innerHTML = "";
   if(!currentRegion && !q && activeFilter === "todas") {
@@ -790,6 +826,24 @@ function normalizeRecordForDb(r){
   };
 }
 
+// Reconstrói a lista de regiões a partir dos próprios registros do Supabase
+// (número, nome e a imagem do mapa correspondente). Assim não é preciso um
+// arquivo local com os dados.
+function buildRegionsFromRecords(){
+  const map = new Map();
+  records.forEach(r => {
+    const num = Number(r.numero_regiao);
+    if(!map.has(num)){
+      map.set(num, {
+        numero: num,
+        name: r.regiao,
+        map_page: `assets/maps/regiao_${String(num).padStart(2,"0")}.png`
+      });
+    }
+  });
+  regions = [...map.values()].sort((a,b) => a.numero - b.numero);
+}
+
 async function loadFromSupabase(){
   try{
     const { data: rows, error } = await sb
@@ -800,17 +854,18 @@ async function loadFromSupabase(){
 
     if(error) throw error;
 
-    if(rows && rows.length){
-      records = rows.map(normalizeRecordFromDb);
-    }
+    records = (rows || []).map(normalizeRecordFromDb);
+    buildRegionsFromRecords();
 
     renderKpis();
     renderSide();
   }catch(error){
     console.error("Erro ao carregar dados do Supabase:", error);
-    alert("Não foi possível carregar os dados do Supabase. O painel será aberto com os dados locais (somente leitura).");
-    renderKpis();
-    renderSide();
+    // Sem fallback local: mantém a segurança e volta para a tela de login.
+    records = [];
+    regions = [];
+    document.body.classList.add("needs-auth");
+    alert("Não foi possível carregar os dados. Verifique sua conexão e faça login novamente.");
   }
 }
 
@@ -863,7 +918,8 @@ async function doLogin(ev){
 async function doLogout(){
   await sb.auth.signOut();
   document.body.classList.add("needs-auth");
-  records = window.OAB_DATA.records || [];
+  records = [];
+  regions = [];
 }
 
 async function enterApp(){
@@ -885,6 +941,23 @@ function toggleTv() {
   if(document.fullscreenElement) document.exitFullscreen();
   else document.documentElement.requestFullscreen?.();
 }
+
+// Proporção mapa × lista no Modo TV (ajustável e lembrada entre sessões)
+function setTvRatio(v){
+  document.documentElement.style.setProperty("--tv-map", v + "%");
+  try{ localStorage.setItem("oabTvMap", v); }catch(e){}
+}
+function initTvRatio(){
+  let v = "58";
+  try{ v = localStorage.getItem("oabTvMap") || "58"; }catch(e){}
+  const s = document.getElementById("tvRatio");
+  if(s) s.value = v;
+  document.documentElement.style.setProperty("--tv-map", v + "%");
+}
+// Sair da tela cheia (ex.: tecla Esc) também sai do Modo TV
+document.addEventListener("fullscreenchange", () => {
+  if(!document.fullscreenElement) document.body.classList.remove("tv");
+});
 // Reorganiza a ordem dos blocos no celular:
 // indicadores → subseções → mapa → botões de ação.
 // No desktop mantém o layout original (indicadores sobre o mapa; botões no cabeçalho).
@@ -919,6 +992,7 @@ function toggleTv() {
 
 renderKpis();
 renderOverlay();
+initTvRatio();
 initAuth();
 </script>
 </body>

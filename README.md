@@ -11,9 +11,11 @@ Vice-Presidente da OAB/SP às Subseções do Estado de São Paulo.
 ## Funcionamento
 
 - O acesso exige **login** (Supabase Auth). Sem login, o painel não exibe nem altera dados.
-- Após o login, os dados são carregados da tabela `public.subsecoes` no Supabase.
-- Caso o Supabase esteja indisponível, o painel abre com os dados locais de `data/dados.js`
-  (somente leitura — alterações não são salvas nesse modo).
+- Após o login, os dados são carregados da tabela `public.subsecoes` no Supabase, que é a
+  **única fonte** dos dados reais. A lista de regiões é montada a partir desses registros.
+- Não há dados reais em arquivos estáticos: `data/dados.js` e `data/subsecoes.csv` ficam
+  vazios de propósito (seriam servidos publicamente pelo site). Se o Supabase estiver
+  indisponível, o painel não abre com dados — volta para a tela de login.
 - KPIs, filtros (todas / não visitadas / visitadas), busca e ordenação (alfabética ou por
   Região Administrativa) são calculados no navegador.
 - "Modo TV" para exibição em tela cheia.
