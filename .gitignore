@@ -9,3 +9,4 @@ Thumbs.db
 # Dependências / build (caso venham a ser usados)
 node_modules/
 dist/
+importar-votacao.sql
