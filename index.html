@@ -484,6 +484,23 @@ body.geral .details{display:none}
 .el-vrow span{color:var(--muted);font-weight:800} .el-vrow b{color:var(--ink);font-weight:950}
 .el-vrow.win span,.el-vrow.win b{color:var(--green)}
 
+/* ---- Histórico de alterações (janela sobreposta) ---- */
+.hist-overlay{display:none;position:fixed;inset:0;z-index:90;background:rgba(16,32,51,.45);align-items:flex-start;justify-content:center;padding:40px 16px}
+.hist-overlay.open{display:flex}
+.hist-modal{width:560px;max-width:100%;max-height:82vh;background:#fff;border-radius:20px;box-shadow:0 24px 60px rgba(0,0,0,.3);overflow:hidden;display:flex;flex-direction:column}
+.hist-head{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.hist-title{font-size:19px;font-weight:900} .hist-sub{font-size:12px;color:var(--muted);font-weight:650;margin-top:3px}
+.hist-close{border:1px solid var(--line);background:#fff;border-radius:10px;width:34px;height:34px;font-size:18px;font-weight:900;color:var(--muted);cursor:pointer}
+.hist-filter{padding:12px 20px;border-bottom:1px solid var(--line)}
+.hist-filter input{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-weight:700;font-size:13px}
+.hist-list{padding:8px 12px;overflow:auto}
+.hist-row{display:flex;gap:12px;padding:11px 8px;border-bottom:1px dashed #eef1f6} .hist-row:last-child{border-bottom:none}
+.hist-av{width:34px;height:34px;border-radius:50%;font-weight:900;display:flex;align-items:center;justify-content:center;font-size:13px;flex:0 0 auto}
+.hist-main{font-size:14px} .hist-meta{font-size:12px;color:var(--muted);margin-top:2px} .hist-lbl{font-size:12px;color:var(--muted)}
+.hv-sim{color:var(--green);font-weight:900} .hv-nao{color:#b45309;font-weight:900}
+.hist-foot{padding:11px 20px;border-top:1px solid var(--line);font-size:11px;color:#94a3b8;font-weight:700}
+.hist-empty{padding:26px;text-align:center;color:var(--muted);font-weight:700;line-height:1.5}
+
 </style>
 </head>
 <body class="needs-auth">
@@ -508,6 +525,7 @@ body.geral .details{display:none}
     <button onclick="showGeneral()">Ver Estado inteiro</button>
     <button onclick="exportCSV()">Exportar CSV</button>
     <label class="file-label">Importar CSV<input type="file" accept=".csv" onchange="importCSV(event)"></label>
+    <button onclick="openHistorico()">Histórico</button>
     <button class="primary" onclick="toggleTv()">Modo TV</button>
     <button onclick="doLogout()" title="Encerrar sessão">Sair</button>
   </div>
@@ -562,6 +580,21 @@ body.geral .details{display:none}
   <span class="tv-lbl">Mapa</span>
   <input id="tvRatio" type="range" min="25" max="70" step="1" value="40" oninput="setRatio(this.value)" aria-label="Proporção entre mapa e lista">
   <span class="tv-lbl">Lista</span>
+</div>
+
+<div id="histOverlay" class="hist-overlay" onclick="if(event.target===this) closeHistorico()">
+  <div class="hist-modal">
+    <div class="hist-head">
+      <div>
+        <div class="hist-title">Histórico de alterações</div>
+        <div class="hist-sub">Quem marcou/desmarcou visitas — e quando</div>
+      </div>
+      <button class="hist-close" onclick="closeHistorico()" aria-label="Fechar">&times;</button>
+    </div>
+    <div class="hist-filter"><input id="histSearch" placeholder="Filtrar por usuário ou subseção..." oninput="renderHistorico()"></div>
+    <div id="histList" class="hist-list"></div>
+    <div class="hist-foot" id="histFoot"></div>
+  </div>
 </div>
 
 
@@ -992,6 +1025,73 @@ async function initAuth(){
   }else{
     document.body.classList.add("needs-auth");
   }
+}
+
+// ---- Histórico de alterações (lê a tabela public.auditoria) ----
+let historicoData = [];
+async function openHistorico(){
+  document.getElementById("histOverlay").classList.add("open");
+  document.getElementById("histList").innerHTML = '<div class="hist-empty">Carregando…</div>';
+  document.getElementById("histFoot").textContent = "";
+  await loadHistorico();
+  renderHistorico();
+}
+function closeHistorico(){ document.getElementById("histOverlay").classList.remove("open"); }
+async function loadHistorico(){
+  try{
+    const { data, error } = await sb
+      .from("auditoria")
+      .select("subsecao,campo,valor_anterior,valor_novo,usuario_email,quando")
+      .order("quando", { ascending: false })
+      .limit(300);
+    if(error) throw error;
+    historicoData = data || [];
+  }catch(e){
+    console.warn("Histórico indisponível:", e && e.message ? e.message : e);
+    historicoData = null;
+  }
+}
+function histIniciais(email){
+  const base = String(email || "").split("@")[0];
+  const parts = base.split(/[.\-_]+/).filter(Boolean);
+  const s = parts.length >= 2 ? (parts[0][0] + parts[1][0]) : base.slice(0,2);
+  return (s || "?").toUpperCase();
+}
+const HIST_CORES = [["#e6f0ff","#2563eb"],["#eafaf0","#16a34a"],["#fff3d6","#92400e"],["#f3e8ff","#7c3aed"],["#ffe4e6","#be123c"]];
+function histCor(email){ let h=0; for(const c of String(email||"")) h=(h*31+c.charCodeAt(0))>>>0; return HIST_CORES[h % HIST_CORES.length]; }
+function fmtData(q){
+  const d = new Date(q);
+  if(isNaN(d)) return "";
+  return d.toLocaleDateString("pt-BR") + " " + d.toLocaleTimeString("pt-BR", {hour:"2-digit", minute:"2-digit"});
+}
+function renderHistorico(){
+  const list = document.getElementById("histList");
+  const foot = document.getElementById("histFoot");
+  if(historicoData === null){
+    list.innerHTML = '<div class="hist-empty">Não foi possível carregar o histórico.<br>Verifique se o log já foi criado no Supabase.</div>';
+    foot.textContent = ""; return;
+  }
+  const q = (document.getElementById("histSearch").value || "").trim().toLowerCase();
+  let arr = historicoData;
+  if(q) arr = arr.filter(r => String(r.subsecao||"").toLowerCase().includes(q) || String(r.usuario_email||"").toLowerCase().includes(q));
+  if(!arr.length){
+    list.innerHTML = '<div class="hist-empty">Nenhuma alteração registrada ainda.</div>';
+    foot.textContent = ""; return;
+  }
+  list.innerHTML = "";
+  arr.forEach(r => {
+    const cor = histCor(r.usuario_email);
+    const novo = r.valor_novo === "Sim" ? '<b class="hv-sim">Sim</b>' : '<b class="hv-nao">Não</b>';
+    const div = document.createElement("div");
+    div.className = "hist-row";
+    div.innerHTML = `<div class="hist-av" style="background:${cor[0]};color:${cor[1]}">${histIniciais(r.usuario_email)}</div>
+      <div style="flex:1">
+        <div class="hist-main"><b>${r.subsecao}</b> <span class="hist-lbl">${r.campo}:</span> ${r.valor_anterior || "-"} → ${novo}</div>
+        <div class="hist-meta">${r.usuario_email || "(desconhecido)"} • ${fmtData(r.quando)}</div>
+      </div>`;
+    list.appendChild(div);
+  });
+  foot.textContent = "Mostrando as " + arr.length + " alterações mais recentes";
 }
 
 function toggleTv() {
