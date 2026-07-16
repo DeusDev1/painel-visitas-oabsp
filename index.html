@@ -2,8 +2,16 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Painel Interativo de Visitas - OAB/SP</title>
+<!-- Instalação como app no celular (tela de início) -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Painel OAB">
+<meta name="theme-color" content="#102334">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -858,6 +866,38 @@ function toggleExpandSubsecao(subsecao){
   renderSide();
 }
 
+// ---- Atualização automática (com várias pessoas editando ao mesmo tempo) ----
+let ultimaAssinatura = "";
+let atualizando = false;
+function assinaturaRecords(){
+  return records.map(r => r.subsecao + "|" + r.presidente + "|" + r.vp).join(";");
+}
+async function refreshDados(){
+  if(atualizando || document.body.classList.contains("needs-auth")) return;
+  atualizando = true;
+  try{
+    const { data: rows, error } = await sb
+      .from("subsecoes")
+      .select("*")
+      .order("numero_regiao", { ascending: true })
+      .order("subsecao", { ascending: true });
+    if(error) throw error;
+    const novos = (rows || []).map(normalizeRecordFromDb);
+    const assin = novos.map(r => r.subsecao + "|" + r.presidente + "|" + r.vp).join(";");
+    if(assin === ultimaAssinatura) return;   // nada mudou: não re-renderiza (evita "piscar")
+    records = novos;
+    ultimaAssinatura = assin;
+    buildRegionsFromRecords();
+    const sc = (typeof subList !== "undefined" && subList) ? subList.scrollTop : 0;
+    renderSide();
+    if(typeof subList !== "undefined" && subList) subList.scrollTop = sc;
+  }catch(e){
+    console.warn("Atualização automática falhou:", e && e.message ? e.message : e);
+  }finally{
+    atualizando = false;
+  }
+}
+
 function setVisitOption(subsecao, field, value){
   const r = records.find(x => x.subsecao === subsecao);
   if(!r) return;
@@ -874,6 +914,7 @@ function setVisitOption(subsecao, field, value){
 
   saveRecordToSupabase(r);
   renderSide();
+  ultimaAssinatura = assinaturaRecords();
 }
 function exportCSV() {
   const header = ["regiao","numero_regiao","subsecao","vp","presidente","classificacao"];
@@ -950,6 +991,7 @@ async function loadFromSupabase(){
 
     renderKpis();
     renderSide();
+    ultimaAssinatura = assinaturaRecords();
   }catch(error){
     console.error("Erro ao carregar dados do Supabase:", error);
     // Sem fallback local: mantém a segurança e volta para a tela de login.
@@ -1167,6 +1209,11 @@ renderKpis();
 renderOverlay();
 initRatios();
 initAuth();
+
+// Atualização automática dos dados: a cada 30s e quando a aba volta ao foco,
+// para que edições de outras pessoas apareçam sem recarregar a página.
+setInterval(refreshDados, 30000);
+document.addEventListener("visibilitychange", () => { if(!document.hidden) refreshDados(); });
 </script>
 </body>
 </html>
